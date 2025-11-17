@@ -10,6 +10,9 @@ type GlobalState = {
   setMessages: React.Dispatch<React.SetStateAction<any>>;
   setFavoriteMessages: React.Dispatch<React.SetStateAction<any>>;
   backendUrl: string;
+
+  allowPushNOtification: boolean;
+  setAllowPushNOtification: React.Dispatch<React.SetStateAction<any>>;
 };
 
 // 2. Create the context with the correct type (or undefined for initial)
@@ -25,6 +28,7 @@ export const GlobalProvider = ({ children }: GlobalProviderProps) => {
   const [favoriteMessages, setFavoriteMessages] = useState([]);
   const [username, setUsername] = useState("");
   const backendUrl = "http://10.46.59.7:3000";
+  const [allowPushNOtification, setAllowPushNOtification] = useState(true);
   return (
     <GlobalContext.Provider
       value={{
@@ -35,6 +39,8 @@ export const GlobalProvider = ({ children }: GlobalProviderProps) => {
         favoriteMessages,
         setFavoriteMessages,
         backendUrl,
+        allowPushNOtification,
+        setAllowPushNOtification,
       }}
     >
       {children}

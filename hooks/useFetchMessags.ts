@@ -6,7 +6,7 @@ import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import Toast from "react-native-toast-message";
 
-const useFetchMessages = (username: string) => {
+const useFetchMessages = () => {
   const router = useRouter();
   const { setFavoriteMessages, setMessages, messages } = useGlobal();
   const [fetchingMessage, setFetchingMessages] = useState(false);
@@ -23,7 +23,7 @@ const useFetchMessages = (username: string) => {
         return;
       }
 
-      const res = await MessagesRequest.getMessages(username);
+      const res = await MessagesRequest.getMessages();
       const m: VoxaMessage[] = res.messages;
 
       setMessages(m);

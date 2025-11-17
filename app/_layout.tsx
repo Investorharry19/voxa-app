@@ -4,6 +4,7 @@ import { AccountApiRequest } from "@/utils/axios";
 import { GlobalProvider, useGlobal } from "@/utils/globals";
 import { toastConfig } from "@/utils/toastConfig";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { addEventListener } from "@react-native-community/netinfo";
 import {
   DarkTheme,
   DefaultTheme,
@@ -45,7 +46,7 @@ export default function RootLayout() {
 }
 
 function InnerRootLayout({ colorScheme }: any) {
-  const { setUsername } = useGlobal();
+  const { setUsername, setAllowPushNOtification } = useGlobal();
   const [isInitialized, setIsInitialized] = useState(false);
   const [initialRoute, setInitialRoute] = useState<string | any>(null);
   const router = useRouter();
@@ -88,6 +89,7 @@ function InnerRootLayout({ colorScheme }: any) {
             pathname: `/${data.screen}` as any,
             params: {
               messageText: data.messageText,
+              audioUrl: data.audioUrl,
               id: data.id,
               opened: "false",
             },
@@ -114,8 +116,9 @@ function InnerRootLayout({ colorScheme }: any) {
       console.log("Getting current user");
       const res = await AccountApiRequest.currentUser();
       await AsyncStorage.setItem("voxaToken", res.Token);
+      console.log(res, 117);
       setUsername(res.username);
-      console.log(res);
+      setAllowPushNOtification(res.pushNotificationEnabled);
       if (res.pushToken.length === 0) {
         const token = await registerForPushNotificationsAsync();
         if (!token) return;
@@ -126,9 +129,19 @@ function InnerRootLayout({ colorScheme }: any) {
       console.log(error);
       setInitialRoute("/login");
     } finally {
+      addEventListener((state) => {
+        if (state.isConnected === true) {
+          setInitialRoute("/dashboard");
+          console.log("Online");
+        } else {
+          console.log("OFFOnline");
+          setInitialRoute("/offline");
+        }
+      });
       setIsInitialized(true);
     }
   }
+
   useEffect(() => {
     fetchUser();
   }, []);
@@ -143,6 +156,8 @@ function InnerRootLayout({ colorScheme }: any) {
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       {isInitialized ? (
         <Stack>
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="home" options={{ headerShown: false }} />
           <Stack.Screen
             name="dashboard"
             options={{
@@ -154,15 +169,15 @@ function InnerRootLayout({ colorScheme }: any) {
           <Stack.Screen name="login" options={{ headerShown: false }} />
           <Stack.Screen
             name="textMessageModal"
-            options={{ presentation: "modal", headerShown: false }}
+            options={{ headerShown: false }}
           />
           <Stack.Screen
             name="audioMessageModal"
             options={{ presentation: "modal", headerShown: false }}
           />
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="home" options={{ headerShown: false }} />
           <Stack.Screen name="register" options={{ headerShown: false }} />
+          <Stack.Screen name="offline" options={{ headerShown: false }} />
+
           <Stack.Screen name="+not-found" />
         </Stack>
       ) : (

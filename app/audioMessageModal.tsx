@@ -42,10 +42,10 @@ export default function AudioMessageModal() {
   const [loadingVideo, setLoadingVideo] = useState(false);
   const [videoUri, setVideoUri] = useState<string | null>(null);
 
-  const { messages, setMessages, setFavoriteMessages, username } = useGlobal();
+  const { messages, setMessages, setFavoriteMessages } = useGlobal();
   const message = messages.filter((message) => message._id == id)[0];
 
-  const { allMessagefetched } = useFetchMessages(username);
+  const { allMessagefetched } = useFetchMessages();
 
   const updateSeenStatus = async () => {
     const recycledMessages = messages;
@@ -76,7 +76,7 @@ export default function AudioMessageModal() {
   };
 
   useEffect(() => {
-    if (username && allMessagefetched) {
+    if (allMessagefetched) {
       updateSeenStatus();
     }
   }, [allMessagefetched]);

@@ -2,14 +2,15 @@ import VoxaGradientButton from "@/components/VoxaGradientButton";
 import { Colors } from "@/constants/Colors";
 import { AccountApiRequest } from "@/utils/axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { useLocalSearchParams } from "expo-router";
 import {
   ActivityIndicator,
+  BackHandler,
   Image,
   KeyboardAvoidingView,
   Linking,
@@ -48,7 +49,7 @@ const Home = () => {
   const {
     control,
     handleSubmit,
-    watch,
+
     formState: { errors },
   } = useForm<FormData>({
     defaultValues: {
@@ -105,7 +106,28 @@ const Home = () => {
     }
   };
 
-  const password = watch("password");
+  async function clearToken() {
+    await AsyncStorage.removeItem("voxaToken");
+  }
+  useEffect(() => {
+    clearToken();
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        BackHandler.exitApp(); // Exit the app
+        return true; // Prevent default back behavior
+      };
+
+      const subscription = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress
+      );
+
+      return () => subscription.remove(); // Changed this line
+    }, [])
+  );
 
   return (
     <>

@@ -1,21 +1,28 @@
 import MessageItem from "@/components/DashboardMessageCard";
 import ToggleTabs from "@/components/DashboardMessageToggle";
 import DoubleTapManual from "@/components/headerLogo";
+import SettingsModal from "@/components/settings";
 import VoxaGradientButton from "@/components/VoxaGradientButton";
 import { Colors } from "@/constants/Colors";
 import useFetchMessages from "@/hooks/useFetchMessags";
 import useAnonymousMessages from "@/hooks/useSocket";
 import { backendUrl } from "@/sever";
+import { MessagesRequest } from "@/utils/axios";
 import { useGlobal } from "@/utils/globals";
 import { VoxaMessage } from "@/utils/myTypes";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
+import { BlurView } from "expo-blur";
 import * as Clipboard from "expo-clipboard";
-import { useLocalSearchParams } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   BackHandler,
   Image,
+  Modal as MyModal,
+  Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -29,18 +36,21 @@ import Toast from "react-native-toast-message";
 export default function dashboad() {
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState("messages");
-  const { messages, setMessages, favoriteMessages, setFavoriteMessages } =
-    useGlobal();
-
+  const {
+    messages,
+    favoriteMessages,
+    username,
+    setMessages,
+    setFavoriteMessages,
+  } = useGlobal();
+  const [deleteModalVisible, setDeleteModaVisible] = useState(false);
   const [fetchingMessages, setFetchingMessages] = useState(true);
   const [displayMessages, setDisplayMessages] = useState<VoxaMessage[]>([]);
+  const [settingsModalVisible, setSettingsModalVisible] = useState(false);
 
   // Get username once
-  const { username } = useLocalSearchParams();
 
-  const { fetchingMessage: FM, refetchMessages } = useFetchMessages(
-    username as string
-  );
+  const { fetchingMessage: FM, refetchMessages } = useFetchMessages();
 
   console.log("Dashboard mounted with username:", username);
 
@@ -90,7 +100,9 @@ export default function dashboad() {
   const copyLink = async () => {
     console.log("Copied");
     setCopyText("Copied");
-    await Clipboard.setStringAsync("Copied");
+    await Clipboard.setStringAsync(
+      "https://www.voxa.buzz/send-message/" + username
+    );
     Toast.show({
       type: "success",
       text1: "Link Copied",
@@ -100,6 +112,33 @@ export default function dashboad() {
       setCopyText("Copy Link");
     }, 5000);
   };
+
+  async function deleteAllMessage() {
+    const tempHolder = messages;
+    setFavoriteMessages(messages.filter((msg) => msg.isStarred === true));
+    setDeleteModaVisible(false);
+
+    try {
+      await MessagesRequest.deleteAllMessages();
+      router.back();
+    } catch (error) {
+      console.log("Delete error:", error);
+      setMessages(tempHolder);
+      setFavoriteMessages(tempHolder.filter((msg) => msg.isStarred === true));
+      Toast.show({
+        type: "error",
+        text1: "Failed to delete all message",
+        position: "top",
+      });
+    }
+  }
+
+  async function logoutUser() {
+    await AsyncStorage.removeItem("voxaToken");
+    setTimeout(() => {
+      router.replace("/login");
+    }, 100);
+  }
 
   return (
     <SafeAreaView
@@ -111,6 +150,8 @@ export default function dashboad() {
           style={{
             marginLeft: "auto",
             flexDirection: "row",
+
+            alignItems: "center",
           }}
         >
           <TouchableOpacity onPress={copyLink} activeOpacity={0.8}>
@@ -120,14 +161,21 @@ export default function dashboad() {
             />
           </TouchableOpacity>
 
-          <Image
-            source={require("../assets/images/trash.png")}
-            style={styles.headerIcon}
-          />
-          <Image
-            source={require("../assets/images/fox-header.png")}
-            style={styles.headerIcon}
-          />
+          <TouchableOpacity onPress={() => setDeleteModaVisible(true)}>
+            <Image
+              source={require("../assets/images/trash.png")}
+              style={styles.headerIcon}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setSettingsModalVisible(true)}
+          >
+            <Image
+              source={require("../assets/images/fox-header.png")}
+              style={styles.headerIcon}
+            />
+          </TouchableOpacity>
         </View>
       </View>
       <ToggleTabs activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -136,7 +184,7 @@ export default function dashboad() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {fetchingMessages && displayMessages.length === 0 && (
+        {fetchingMessages && (
           <View>
             <ActivityIndicator
               size={80}
@@ -192,6 +240,83 @@ export default function dashboad() {
           </View>
         )}
       </ScrollView>
+
+      <SettingsModal
+        visible={settingsModalVisible}
+        onClose={() => setSettingsModalVisible(false)}
+        onLogout={() => logoutUser()}
+      />
+
+      <MyModal
+        transparent
+        animationType="fade"
+        visible={deleteModalVisible}
+        onRequestClose={() => setDeleteModaVisible(false)}
+      >
+        <BlurView style={styles.overlay} intensity={100} tint="dark">
+          <View style={styles.modalBox}>
+            {/* Trash Icon */}
+            <Image
+              source={require("../assets/images/trash-red.png")}
+              style={styles.icon}
+            />
+
+            {/* Title */}
+            <Text style={styles.title}>Delete all Messagees</Text>
+
+            {/* Subtitle */}
+            <Text style={styles.subtitle}>
+              Do you want to delete this message?{"\n"}This action cannot be
+              undone
+            </Text>
+
+            {/* Buttons */}
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              <TouchableOpacity
+                onPress={() => setDeleteModaVisible(false)}
+                activeOpacity={0.8}
+                style={buttons.buttonWrapper}
+              >
+                <LinearGradient
+                  colors={["#d7d7d7", "#aaa", "#a2a2a2"]}
+                  locations={[0, 0.6667, 0.9687]}
+                  start={{ x: 0.5, y: 0 }}
+                  end={{ x: 0.5, y: 1 }}
+                  style={buttons.gradient}
+                >
+                  <Text
+                    style={{ ...buttons.buttonText, fontFamily: "Regular" }}
+                  >
+                    Cancel
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => {
+                  deleteAllMessage();
+                }}
+                activeOpacity={0.8}
+                style={buttons.buttonWrapper} // Changed from buttons.buttonWrapper
+              >
+                <LinearGradient
+                  colors={["#fe5b51", "#fe2e22", "#ff3b30"]} // Removed extra space after "#fe2e22 "
+                  locations={[0, 0.6667, 0.9687]}
+                  start={{ x: 0.5, y: 0 }}
+                  end={{ x: 0.5, y: 1 }}
+                  style={buttons.gradient} // Changed from buttons.gradient
+                >
+                  <Text
+                    style={{ ...buttons.buttonText, fontFamily: "Regular" }} // Changed from buttons.buttonText
+                  >
+                    Delete
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </BlurView>
+      </MyModal>
     </SafeAreaView>
   );
 }
@@ -206,5 +331,74 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginHorizontal: 5,
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 18,
+    fontFamily: "Regular",
+    marginBottom: 6,
+    textAlign: "center",
+  },
+  subtitle: {
+    fontSize: 12,
+    color: "#555",
+    textAlign: "center",
+    marginBottom: 20,
+    fontFamily: "Regular",
+  },
+  modalBox: {
+    width: 300,
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 20,
+    alignItems: "center",
+  },
+  icon: {
+    width: 50,
+    height: 50,
+    marginBottom: 10,
+    tintColor: "#FF3B30",
+  },
+});
+
+const buttons = StyleSheet.create({
+  buttonWrapper: {
+    borderRadius: 150,
+    borderWidth: 0.5,
+    borderColor: "#ffffff",
+    // Outer shadows
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000000",
+        shadowOffset: { width: 0, height: 0.5 },
+        shadowOpacity: 0.25,
+        shadowRadius: 0.5,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  gradient: {
+    paddingVertical: 12,
+    borderRadius: 30,
+    paddingHorizontal: 35,
+    alignItems: "center",
+    justifyContent: "center",
+    // Inner shadows (approximated with border)
+    borderTopWidth: 0.5,
+    borderTopColor: "rgba(202, 189, 182, 0.3)",
+    borderBottomWidth: 0.5,
+    borderBottomColor: "rgba(165, 157, 157, 0.3)",
+  },
+  buttonText: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

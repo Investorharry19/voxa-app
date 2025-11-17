@@ -75,6 +75,7 @@ export const AccountApiRequest = {
   currentUser: () => requests.get("account/current-user"),
   createPushToken: (token: string) =>
     requests.post("account/create-push-token", { pushToken: token }),
+  togglePushStatus: () => requests.post("account/toggle-push-status", {}),
 };
 
 export const MessagesRequest = {
@@ -86,11 +87,9 @@ export const MessagesRequest = {
     requests.processVideo("message/process/create-video-stream", body),
   sendTextMessage: (body: any) =>
     requests.post("message/send/text-message", body),
-  getMessages: (username: any) =>
-    requests.get(`message/get-messages/${username}`),
+  getMessages: () => requests.get(`message/get-messages`),
   deleteMessage: (id: any) => requests.delete(`message/delete-message/${id}`),
-  deleteAllMessages: (username: any) =>
-    requests.delete(`message/delete-all-message/${username}`),
+  deleteAllMessages: () => requests.delete(`message/delete-all-message`),
   seenMessage: (id: any) =>
     requests.patch(`message/mark-message-as-read/${id}`, {}),
   toggleFav: (id: any) => requests.patch(`message/star-message/${id}`, {}),

@@ -2,6 +2,7 @@
 import { MessagesRequest } from "@/utils/axios";
 import { useGlobal } from "@/utils/globals";
 import { VoxaMessage } from "@/utils/myTypes";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 export default function useAnonymousMessages({
@@ -24,7 +25,12 @@ export default function useAnonymousMessages({
     //Fetch initial messages from API
     const fetchInitialMessages = async () => {
       try {
-        const res = await MessagesRequest.getMessages(user);
+        const token = await AsyncStorage.getItem("voxaToken");
+
+        if (!token) {
+          return;
+        }
+        const res = await MessagesRequest.getMessages();
 
         const m: VoxaMessage[] = res.messages;
         setLocalMessages(res.messages);

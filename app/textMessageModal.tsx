@@ -26,15 +26,16 @@ import {
   View,
 } from "react-native";
 
-function TextMessageModal() {
+export default function TextMessageModal() {
   const [shareModalVisible, setShareModaVisible] = useState(false);
   const [deleteModalVisible, setDeleteModaVisible] = useState(false);
   const { id, opened, messageText } = useLocalSearchParams();
-  const { messages, setMessages, setFavoriteMessages, username } = useGlobal();
+  const { messages, setMessages, setFavoriteMessages } = useGlobal();
   const message = messages.filter((message) => message._id == id)[0];
   const viewRef = useRef<any>(null);
-  const { allMessagefetched } = useFetchMessages(username);
+  const { allMessagefetched } = useFetchMessages();
 
+  console.log("entered message modal");
   const updateSeenStatus = async () => {
     const recycledMessages = messages;
     const newMessages = messages.map((msg) =>
@@ -42,7 +43,7 @@ function TextMessageModal() {
     );
     setMessages(newMessages);
     setFavoriteMessages(newMessages.filter((msg) => msg.isStarred === true));
-
+    console.log({ opened });
     if (opened === "true") {
       return;
     }
@@ -64,7 +65,8 @@ function TextMessageModal() {
   };
 
   useEffect(() => {
-    if (username && allMessagefetched) {
+    console.log({ allMessagefetched });
+    if (allMessagefetched) {
       updateSeenStatus();
     }
   }, [allMessagefetched]);
@@ -463,7 +465,6 @@ function TextMessageModal() {
     </ImageBackground>
   );
 }
-export default TextMessageModal;
 
 const styles = StyleSheet.create({
   container: {
