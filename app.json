@@ -57,13 +57,12 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-font",[
-
-        "expo-notifications" ,
+      "expo-font",
+      [
+        "expo-notifications",
         {
           "icon": "./assets/images/logo-small.png",
           "color": "#ffffff",
-          "sounds": ["./assets/beep.mp3"],
           "mode": "production"
         }
       ]
