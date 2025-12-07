@@ -1,5 +1,3 @@
-// export const backendUrl = "http://10.193.49.7:3000/";
-// export const backendUrl = "https://voxa-backend-diu5.onrender.com/";
-export const backendUrl = "https://stealth-backend-kj78.onrender.com/";
-
-//
+// export const backendUrl = "http://10.218.149.7:4000/";
+export const backendUrl =
+  "https://secret-backend-production-be4a.up.railway.app/";

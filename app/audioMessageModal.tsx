@@ -2,19 +2,14 @@ import AudioVisualizer from "@/components/audioVisual";
 import ShareModal from "@/components/ShareModal";
 import VoxaGradientButton from "@/components/VoxaGradientButton";
 import { Colors } from "@/constants/Colors";
-import { MessagesRequest } from "@/utils/axios";
 import { useGlobal } from "@/utils/globals";
-import { VoxaMessage } from "@/utils/myTypes";
 import { downloadAndSaveVideo } from "@/utils/videoSharing";
 import { BlurView } from "expo-blur";
-import * as FileSystem from "expo-file-system";
 import { LinearGradient } from "expo-linear-gradient";
-import * as MediaLibrary from "expo-media-library";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Image,
   ImageBackground,
   Modal as MyModal,
@@ -22,12 +17,18 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 
 import useFetchMessages from "@/hooks/useFetchMessags";
+import {
+  handleDeleteMessage,
+  handleMarkAsRead,
+  handleToggleFavorite,
+  handleVideoSave,
+  handleVideoShare,
+} from "@/utils/messageActions";
 import Share from "react-native-share";
-import Toast from "react-native-toast-message";
 
 export default function AudioMessageModal() {
   // Changed to uppercase
@@ -48,31 +49,13 @@ export default function AudioMessageModal() {
   const { allMessagefetched } = useFetchMessages();
 
   const updateSeenStatus = async () => {
-    const recycledMessages = messages;
-    const newMessages = messages.map((msg) =>
-      msg._id === id ? { ...msg, isOpened: true } : msg
+    await handleMarkAsRead(
+      id,
+      messages,
+      setMessages,
+      setFavoriteMessages,
+      opened
     );
-    setMessages(newMessages);
-    setFavoriteMessages(newMessages.filter((msg) => msg.isStarred === true));
-
-    if (opened === "true") {
-      return;
-    }
-    try {
-      console.log(id);
-      await MessagesRequest.seenMessage(id);
-    } catch (err) {
-      console.log({ err });
-      setMessages(recycledMessages);
-      setFavoriteMessages(
-        recycledMessages.filter((msg) => msg.isStarred === true)
-      );
-      Toast.show({
-        type: "error",
-        text1: "Something went wrong... Try again",
-        position: "top",
-      });
-    }
   };
 
   useEffect(() => {
@@ -81,52 +64,24 @@ export default function AudioMessageModal() {
     }
   }, [allMessagefetched]);
 
-  const handleToggleFavorite = async () => {
-    try {
-      const f: VoxaMessage[] = [];
-      const newMessages = messages.map((x) => {
-        console.log(x._id);
-        if (x._id == id) {
-          x.isStarred = !x.isStarred;
-        }
-        if (x.isStarred) {
-          f.push(x);
-        }
-
-        return x;
-      });
-      setMessages(newMessages);
-      console.log(f);
-      setFavoriteMessages(f);
-      await MessagesRequest.toggleFav(id);
-    } catch (error) {
-      Toast.show({
-        type: "error",
-        text1: "Somethin went wrong",
-        position: "top",
-      });
-    }
+  const onToggleFavorite = async () => {
+    await handleToggleFavorite(
+      id,
+      messages,
+      setMessages,
+      setFavoriteMessages
+    );
   };
-  async function deleteMessage() {
-    const tempHolder = messages;
-    const newMessages = messages.filter((message) => message._id !== id);
-    setMessages(newMessages);
-    setFavoriteMessages(newMessages.filter((msg) => msg.isStarred === true));
-    setDeleteModaVisible(false);
 
-    try {
-      await MessagesRequest.deleteMessage(id);
-      router.back();
-    } catch (error) {
-      console.log("Delete error:", error);
-      setMessages(tempHolder);
-      setFavoriteMessages(tempHolder.filter((msg) => msg.isStarred === true));
-      Toast.show({
-        type: "error",
-        text1: "Failed to delete message",
-        position: "top",
-      });
-    }
+  async function deleteMessage() {
+    setDeleteModaVisible(false);
+    await handleDeleteMessage(
+      id,
+      messages,
+      setMessages,
+      setFavoriteMessages,
+      router
+    );
   }
 
   async function createVideoToShare() {
@@ -147,58 +102,16 @@ export default function AudioMessageModal() {
   }
 
   const shareToSocial = async (specific: boolean, app: any = null) => {
-    try {
-      const cacheFile = FileSystem.cacheDirectory + "share-video.mp4";
-      const existing = await FileSystem.getInfoAsync(cacheFile);
-      if (existing.exists)
-        await FileSystem.deleteAsync(cacheFile, { idempotent: true });
-      await FileSystem.copyAsync({ from: videoUri as string, to: cacheFile });
-
-      // 2. Set up share options
-      const shareOptions: any = {
-        title: "Sharing Video",
-        url: Platform.OS === "android" ? `file://${cacheFile}` : cacheFile,
-        type: "video/mp4",
-        message:
-          "https://www.voxa.buzz! 🎬\nSend and receive anonymous messages.",
-        failOnCancel: false,
-        social: app,
-      };
-
-      // 3. App-specific share
-      if (specific && app) {
-        await Share.shareSingle(shareOptions);
-      } else {
-        await Share.open(shareOptions);
-      }
-
-      // 4. Close share modal
-      setShareModaVisible(false);
-    } catch (error) {
-      console.log("Error sharing video:", error);
-    }
+    await handleVideoShare(
+      videoUri as string,
+      specific,
+      app,
+      setShareModaVisible
+    );
   };
 
   async function downloadLocally() {
-    // Ask for gallery permission
-    const { status } = await MediaLibrary.requestPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permission Denied", "Please allow media access.");
-      return;
-    }
-
-    // Save the image to Voxa Messages album
-    const asset = await MediaLibrary.createAssetAsync(videoUri as string);
-    let album = await MediaLibrary.getAlbumAsync("Voxa Messages");
-
-    if (!album) {
-      await MediaLibrary.createAlbumAsync("Voxa Messages", asset, false);
-    } else {
-      await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
-    }
-
-    Alert.alert("Success", "Image saved to Voxa Messages album!");
-    setShareModaVisible(false);
+    await handleVideoSave(videoUri as string, setShareModaVisible);
   }
   return (
     <ImageBackground
@@ -285,7 +198,7 @@ export default function AudioMessageModal() {
 
         <TouchableOpacity
           activeOpacity={0.7}
-          onPress={() => handleToggleFavorite()}
+          onPress={() => onToggleFavorite()}
           style={{ backgroundColor: "white", borderRadius: 100, padding: 8 }}
         >
           {message?.isStarred === true ? (

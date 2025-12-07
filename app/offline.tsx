@@ -13,9 +13,14 @@ export default function Offline() {
     >
       <Image
         source={require("../assets/images/offline.png")}
-        style={{ objectFit: "contain", height: 300, width: 300 }}
+        style={{
+          objectFit: "contain",
+          height: 200,
+          width: 200,
+          marginBottom: 10,
+        }}
       />
-      <Text style={{ fontFamily: "Bold", fontSize: 25, textAlign: "center" }}>
+      <Text style={{ fontFamily: "Bold", fontSize: 20, textAlign: "center" }}>
         No Internet Connection Found...
       </Text>
     </View>

@@ -9,7 +9,9 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.hendrix_ameh.voxa",
+      "associatedDomains": ["applinks:www.voxa.buzz", "applinks:voxa.buzz"]
     },
     "android": {
       "adaptiveIcon": {
@@ -18,7 +20,26 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.hendrix_ameh.voxa",
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "www.voxa.buzz",
+              "pathPrefix": "/send-message"
+            },
+            {
+              "scheme": "https",
+              "host": "voxa.buzz",
+              "pathPrefix": "/send-message"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -30,14 +51,22 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/logo.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-font",
-      "expo-notifications"
+      "expo-font",[
+
+        "expo-notifications" ,
+        {
+          "icon": "./assets/images/logo-small.png",
+          "color": "#ffffff",
+          "sounds": ["./assets/beep.mp3"],
+          "mode": "production"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

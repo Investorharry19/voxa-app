@@ -9,18 +9,19 @@ import { Controller, useForm } from "react-hook-form";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { useLocalSearchParams } from "expo-router";
 import {
-  ActivityIndicator,
-  BackHandler,
-  Image,
-  KeyboardAvoidingView,
-  Linking,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
+    ActivityIndicator,
+    BackHandler,
+    Image,
+    KeyboardAvoidingView,
+    Linking,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
@@ -34,6 +35,7 @@ const Home = () => {
   const router = useRouter();
   const [modalVisible, setModalVisible] = useState(false);
   const [makingRequest, setMakingRequest] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const { expiredToken } = useLocalSearchParams();
   useEffect(() => {
@@ -201,13 +203,26 @@ const Home = () => {
                     },
                   }}
                   render={({ field: { onChange, value } }) => (
-                    <TextInput
-                      placeholder="Password"
-                      secureTextEntry
-                      value={value}
-                      onChangeText={onChange}
-                      style={[styles.input]}
-                    />
+                    <View style={styles.passwordInputWrapper}>
+                      <TextInput
+                        placeholder="Password"
+                        secureTextEntry={!showPassword}
+                        value={value}
+                        onChangeText={onChange}
+                        style={styles.passwordInput}
+                        textAlignVertical="center"
+                      />
+                      <TouchableOpacity
+                        onPress={() => setShowPassword(!showPassword)}
+                        activeOpacity={0.7}
+                      >
+                        <AntDesign
+                          name={showPassword ? "eye" : "eyeo"}
+                          size={20}
+                          color={Colors.grayOne}
+                        />
+                      </TouchableOpacity>
+                    </View>
                   )}
                 />
                 {errors.password && (
@@ -398,6 +413,23 @@ const styles = StyleSheet.create({
     height: 45,
     overflow: "hidden",
     color: "#000",
+  },
+  passwordInputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    height: 45,
+    paddingHorizontal: 12,
+    overflow: "hidden",
+  },
+  passwordInput: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: "Regular",
+    color: "#000",
+    height: "100%",
   },
 
   errorText: {

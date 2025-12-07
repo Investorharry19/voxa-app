@@ -11,19 +11,15 @@ import Animated, {
 } from "react-native-reanimated";
 import Toast from "react-native-toast-message";
 
-export default function MessageItem({
-  message,
-  idx,
-  activeMessage,
-  opened,
-}: any) {
+export default function MessageItem({ message, idx, opened }: any) {
   // Animation values
   const router = useRouter();
   const x = useSharedValue(20);
   const opacity = useSharedValue(0);
   const rotate = useSharedValue(message.isStarred ? 20 : 0);
 
-  const { messages, setMessages, setFavoriteMessages } = useGlobal();
+  const { messages, setMessages, setFavoriteMessages, favoriteMessages } =
+    useGlobal();
 
   useEffect(() => {
     x.value = withSpring(0, { damping: 20, stiffness: 150 });
@@ -45,8 +41,6 @@ export default function MessageItem({
   const starStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${rotate.value}deg` }],
   }));
-
-  const isActive = activeMessage?._id === message._id;
 
   function timeAgo(date: any) {
     const timeMs = typeof date === "number" ? date : date.getTime();
@@ -75,18 +69,15 @@ export default function MessageItem({
     try {
       const f: VoxaMessage[] = [];
       const newMessages = messages.map((x) => {
-        console.log(x._id);
         if (x._id == id) {
           x.isStarred = !x.isStarred;
         }
         if (x.isStarred) {
           f.push(x);
         }
-
         return x;
       });
       setMessages(newMessages);
-      console.log(f);
       setFavoriteMessages(f);
       await MessagesRequest.toggleFav(id);
     } catch (error) {

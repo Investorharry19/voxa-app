@@ -1,4 +1,4 @@
-import React, { createContext, ReactNode, useContext, useState } from "react";
+import React, { createContext, ReactNode, useContext, useMemo, useState } from "react";
 import { VoxaMessage } from "./myTypes";
 
 // 1. Define the shape of your global state
@@ -29,20 +29,25 @@ export const GlobalProvider = ({ children }: GlobalProviderProps) => {
   const [username, setUsername] = useState("");
   const backendUrl = "http://10.46.59.7:3000";
   const [allowPushNOtification, setAllowPushNOtification] = useState(true);
+
+  // Memoize the context value to prevent unnecessary re-renders
+  const value = useMemo(
+    () => ({
+      username,
+      setUsername,
+      messages,
+      setMessages,
+      favoriteMessages,
+      setFavoriteMessages,
+      backendUrl,
+      allowPushNOtification,
+      setAllowPushNOtification,
+    }),
+    [username, messages, favoriteMessages, allowPushNOtification]
+  );
+
   return (
-    <GlobalContext.Provider
-      value={{
-        username,
-        setUsername,
-        messages,
-        setMessages,
-        favoriteMessages,
-        setFavoriteMessages,
-        backendUrl,
-        allowPushNOtification,
-        setAllowPushNOtification,
-      }}
-    >
+    <GlobalContext.Provider value={value}>
       {children}
     </GlobalContext.Provider>
   );

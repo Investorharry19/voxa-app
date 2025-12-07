@@ -1,20 +1,16 @@
 // useAnonymousMessages.js
-import { MessagesRequest } from "@/utils/axios";
 import { useGlobal } from "@/utils/globals";
 import { VoxaMessage } from "@/utils/myTypes";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { io, Socket } from "socket.io-client";
+
 export default function useAnonymousMessages({
   serverUrl,
 }: {
   serverUrl: string;
 }) {
   const socketRef = useRef<Socket | any>(null);
-  const { setMessages, setFavoriteMessages, username: user } = useGlobal();
-  const [messages, setLocalMessages] = useState<VoxaMessage[]>([]);
-
-  // Log outside useEffect to confirm hook is being called
+  const { setMessages, username: user } = useGlobal();
 
   useEffect(() => {
     if (!serverUrl) {
@@ -22,27 +18,8 @@ export default function useAnonymousMessages({
       return;
     }
 
-    //Fetch initial messages from API
-    const fetchInitialMessages = async () => {
-      try {
-        const token = await AsyncStorage.getItem("voxaToken");
-
-        if (!token) {
-          return;
-        }
-        const res = await MessagesRequest.getMessages();
-
-        const m: VoxaMessage[] = res.messages;
-        setLocalMessages(res.messages);
-        setMessages(res.messages);
-        const favs = m.filter((fav) => fav.isStarred);
-        setFavoriteMessages(favs);
-      } catch (err) {
-        console.error("Error fetching initial messages:", err);
-      }
-    };
-
-    fetchInitialMessages();
+    // Note: Initial messages are fetched by useFetchMessages hook
+    // This hook only handles real-time socket updates
 
     try {
       //Connect to Socket.IO
@@ -59,6 +36,9 @@ export default function useAnonymousMessages({
       socketRef.current.on("new-anonymous-message", (message: VoxaMessage) => {
         setMessages((prev: VoxaMessage[]) => [message, ...prev]);
       });
+
+
+      socketRef.current.emit("owner_online", { messageId: user });
 
       socketRef.current.on("connect", () => {
         console.log("Connected to socket.io:", socketRef.current.id);
@@ -84,5 +64,4 @@ export default function useAnonymousMessages({
       }
     };
   }, [serverUrl]);
-  return messages;
 }

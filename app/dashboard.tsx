@@ -52,13 +52,16 @@ export default function dashboad() {
 
   const { fetchingMessage: FM, refetchMessages } = useFetchMessages();
 
-  console.log("Dashboard mounted with username:", username);
-
   // Call the socket hook at the top-level of the component
   // Hooks must not be called inside effects or conditionals.
   useAnonymousMessages({
     serverUrl: backendUrl,
   });
+
+  // Log only on mount, not on every render
+  useEffect(() => {
+    console.log("Dashboard mounted with username:", username);
+  }, []);
 
   useFocusEffect(
     useCallback(() => {

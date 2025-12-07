@@ -8,7 +8,10 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "build-dev-preview": "eas build --profile preview --platform android",
+    "build-apk-preview": "eas build --profile apk --platform android",
+    "build-production": "eas build --profile production --platform android"
   },
   "dependencies": {
     "@expo-google-fonts/poppins": "^0.4.0",

@@ -1,21 +1,19 @@
 import ShareModal from "@/components/ShareModal";
 import VoxaGradientButton from "@/components/VoxaGradientButton";
+import useFetchMessages from "@/hooks/useFetchMessags";
 import { useGlobal } from "@/utils/globals";
-import * as FileSystem from "expo-file-system";
+import {
+  handleCaptureAndSave,
+  handleCaptureAndShare,
+  handleDeleteMessage,
+  handleMarkAsRead,
+  handleToggleFavorite,
+} from "@/utils/messageActions";
+import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
-import * as MediaLibrary from "expo-media-library";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import Share from "react-native-share";
-import Toast from "react-native-toast-message";
-import ViewShot from "react-native-view-shot";
-
-import useFetchMessages from "@/hooks/useFetchMessags";
-import { MessagesRequest } from "@/utils/axios";
-import { VoxaMessage } from "@/utils/myTypes";
-import { BlurView } from "expo-blur";
 import {
-  Alert,
   Image,
   ImageBackground,
   Modal as MyModal,
@@ -25,43 +23,37 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Share from "react-native-share";
+import ViewShot from "react-native-view-shot";
 
 export default function TextMessageModal() {
   const [shareModalVisible, setShareModaVisible] = useState(false);
   const [deleteModalVisible, setDeleteModaVisible] = useState(false);
-  const { id, opened, messageText } = useLocalSearchParams();
+  const { id, opened, messageText, autoShare } = useLocalSearchParams();
   const { messages, setMessages, setFavoriteMessages } = useGlobal();
   const message = messages.filter((message) => message._id == id)[0];
   const viewRef = useRef<any>(null);
   const { allMessagefetched } = useFetchMessages();
 
-  console.log("entered message modal");
+  // Log only on mount
+  useEffect(() => {
+    console.log("entered message modal");
+    if (autoShare === "true") {
+      // Small delay to ensure the view is ready before showing modal/capturing if needed
+      setTimeout(() => {
+        setShareModaVisible(true);
+      }, 500);
+    }
+  }, [autoShare]);
+
   const updateSeenStatus = async () => {
-    const recycledMessages = messages;
-    const newMessages = messages.map((msg) =>
-      msg._id === id ? { ...msg, isOpened: true } : msg
+    await handleMarkAsRead(
+      id as string,
+      messages,
+      setMessages,
+      setFavoriteMessages,
+      opened
     );
-    setMessages(newMessages);
-    setFavoriteMessages(newMessages.filter((msg) => msg.isStarred === true));
-    console.log({ opened });
-    if (opened === "true") {
-      return;
-    }
-    try {
-      console.log(id);
-      await MessagesRequest.seenMessage(id);
-    } catch (err) {
-      console.log({ err });
-      setMessages(recycledMessages);
-      setFavoriteMessages(
-        recycledMessages.filter((msg) => msg.isStarred === true)
-      );
-      Toast.show({
-        type: "error",
-        text1: "Something went wrong... Try again",
-        position: "top",
-      });
-    }
   };
 
   useEffect(() => {
@@ -72,122 +64,31 @@ export default function TextMessageModal() {
   }, [allMessagefetched]);
 
   const captureAndShare = async (specific: boolean, app: any = null) => {
-    try {
-      // 1. Capture view
-      const uri = await viewRef.current.capture();
-      const fileUri = FileSystem.documentDirectory + "screenshot.jpg";
-
-      // 2. Copy to file system (for sharing)
-      await FileSystem.copyAsync({
-        from: uri,
-        to: fileUri,
-      });
-
-      // 3. Set up share options
-      const shareOptions: any = {
-        title: "Sharing Screenshot",
-        url: Platform.OS === "android" ? `file://${fileUri}` : fileUri,
-        type: "image/jpeg",
-        message:
-          "https://www.voxa.buzz! 📸 \n Send and receive anonymous messageesLine 2",
-        failOnCancel: false,
-        social: app,
-      };
-
-      // 4. App-specific target (if passed)
-      if (specific && app) {
-        shareOptions.social = app; // e.g., Share.Social.WHATSAPP
-        await Share.shareSingle(shareOptions);
-      }
-      if (specific === false) {
-        await Share.open(shareOptions);
-      }
-
-      // 5. Share
-      setShareModaVisible(false);
-    } catch (error) {
-      console.log("Error sharing:", error);
-    }
+    await handleCaptureAndShare(viewRef, specific, app, setShareModaVisible);
   };
 
   const captureAndSave = async () => {
-    try {
-      // Capture the view as an image
-      const uri = await viewRef.current.capture();
-      console.log("Captured image:", uri);
-
-      // Ask for gallery permission
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert("Permission Denied", "Please allow media access.");
-        return;
-      }
-
-      // Save the image to Voxa Messages album
-      const asset = await MediaLibrary.createAssetAsync(uri);
-      let album = await MediaLibrary.getAlbumAsync("Voxa Messages");
-
-      if (!album) {
-        await MediaLibrary.createAlbumAsync("Voxa Messages", asset, false);
-      } else {
-        await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
-      }
-
-      Alert.alert("Success", "Image saved to Voxa Messages album!");
-      setShareModaVisible(false);
-    } catch (error) {
-      console.error("Error saving capture:", error);
-      Alert.alert("Error", "Could not save image.");
-    }
+    await handleCaptureAndSave(viewRef, setShareModaVisible);
   };
 
-  const handleToggleFavorite = async () => {
-    try {
-      const f: VoxaMessage[] = [];
-      const newMessages = messages.map((x) => {
-        console.log(x._id);
-        if (x._id == id) {
-          x.isStarred = !x.isStarred;
-        }
-        if (x.isStarred) {
-          f.push(x);
-        }
-
-        return x;
-      });
-      setMessages(newMessages);
-      console.log(f);
-      setFavoriteMessages(f);
-      await MessagesRequest.toggleFav(id);
-    } catch (error) {
-      Toast.show({
-        type: "error",
-        text1: "Somethin went wrong",
-        position: "top",
-      });
-    }
+  const onToggleFavorite = async () => {
+    await handleToggleFavorite(
+      id as string,
+      messages,
+      setMessages,
+      setFavoriteMessages
+    );
   };
 
   async function deleteMessage() {
-    const tempHolder = messages;
-    const newMessages = messages.filter((message) => message._id !== id);
-    setMessages(newMessages);
-    setFavoriteMessages(newMessages.filter((msg) => msg.isStarred === true));
     setDeleteModaVisible(false);
-
-    try {
-      await MessagesRequest.deleteMessage(id);
-      router.back();
-    } catch (error) {
-      console.log("Delete error:", error);
-      setMessages(tempHolder);
-      setFavoriteMessages(tempHolder.filter((msg) => msg.isStarred === true));
-      Toast.show({
-        type: "error",
-        text1: "Failed to delete message",
-        position: "top",
-      });
-    }
+    await handleDeleteMessage(
+      id as string,
+      messages,
+      setMessages,
+      setFavoriteMessages,
+      router
+    );
   }
   return (
     <ImageBackground
@@ -266,7 +167,7 @@ export default function TextMessageModal() {
 
         <TouchableOpacity
           activeOpacity={0.7}
-          onPress={() => handleToggleFavorite()}
+          onPress={() => onToggleFavorite()}
           style={{ backgroundColor: "white", borderRadius: 100, padding: 8 }}
         >
           {message?.isStarred === true ? (
