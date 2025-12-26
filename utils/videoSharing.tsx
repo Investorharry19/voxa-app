@@ -15,12 +15,10 @@ export async function downloadAndSaveVideo(audioUrl: string) {
 
     const fileUri = FileSystem.cacheDirectory + `video_${Date.now()}.mp4`;
 
-    console.log("Requesting video conversion...");
-
-    const response = await axios.post(
+    const response = await axios.get(
       `${backendUrl}convert`,
-      { audioUrl },
       {
+        params: { audioUrl },
         responseType: "arraybuffer",
         headers: {
           "Content-Type": "application/json",

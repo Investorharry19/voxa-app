@@ -1,27 +1,26 @@
 import VoxaGradientButton from "@/components/VoxaGradientButton";
 import { Colors } from "@/constants/Colors";
 import { AccountApiRequest } from "@/utils/axios";
+import AntDesign from "@expo/vector-icons/AntDesign";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-
-import AntDesign from "@expo/vector-icons/AntDesign";
-import { useLocalSearchParams } from "expo-router";
 import {
-    ActivityIndicator,
-    BackHandler,
-    Image,
-    KeyboardAvoidingView,
-    Linking,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  BackHandler,
+  Image,
+  KeyboardAvoidingView,
+  Linking,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
@@ -216,11 +215,12 @@ const Home = () => {
                         onPress={() => setShowPassword(!showPassword)}
                         activeOpacity={0.7}
                       >
-                        <AntDesign
-                          name={showPassword ? "eye" : "eyeo"}
-                          size={20}
-                          color={Colors.grayOne}
-                        />
+                         <Ionicons
+                      name={showPassword ? "eye" : "eye-off"}
+                      size={20}
+                      color="gray"
+                    />
+
                       </TouchableOpacity>
                     </View>
                   )}

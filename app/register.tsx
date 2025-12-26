@@ -6,6 +6,7 @@ import React, { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
 import AntDesign from "@expo/vector-icons/AntDesign";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import {
   ActivityIndicator,
   Image,
@@ -17,6 +18,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -32,6 +34,8 @@ const Home = () => {
   const router = useRouter();
   const [modalVisible, setModalVisible] = useState(false);
   const [makingRequest, setMakingRequest] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const {
     control,
@@ -135,26 +139,43 @@ const Home = () => {
               <View>
                 <Text style={styles.label}>Password</Text>
 
-                <Controller
-                  name="password"
-                  control={control}
-                  rules={{
-                    required: "Password is required",
-                    minLength: {
-                      value: 6,
-                      message: "Password must be at least 6 characters",
-                    },
-                  }}
-                  render={({ field: { onChange, value } }) => (
-                    <TextInput
-                      placeholder="Password"
-                      secureTextEntry
-                      value={value}
-                      onChangeText={onChange}
-                      style={[styles.input]}
+                <View style={{ position: 'relative' }}>
+                  <Controller
+                    name="password"
+                    control={control}
+                    rules={{
+                      required: "Password is required",
+                      minLength: {
+                        value: 6,
+                        message: "Password must be at least 6 characters",
+                      },
+                    }}
+                    render={({ field: { onChange, value } }) => (
+                      <TextInput
+                        placeholder="Password"
+                        secureTextEntry={!showPassword}
+                        value={value}
+                        onChangeText={onChange}
+                        style={[styles.input]}
+                      />
+                    )}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    style={{
+                      position: 'absolute',
+                      right: 10,
+                      top: '50%',
+                      transform: [{ translateY: -10 }], 
+                    }}
+                  >
+                    <Ionicons
+                      name={showPassword ? "eye" : "eye-off"}
+                      size={20}
+                      color="gray"
                     />
-                  )}
-                />
+                  </TouchableOpacity>
+                </View>
                 {errors.password && (
                   <Text style={styles.errorText}>
                     {errors.password.message}
@@ -164,25 +185,42 @@ const Home = () => {
               <View>
                 <Text style={styles.label}>Confirm Password</Text>
 
-                {/* Confirm Password */}
-                <Controller
-                  name="confirmPassword"
-                  control={control}
-                  rules={{
-                    required: "Please confirm your password",
-                    validate: (value) =>
-                      value === watch("password") || "Passwords do not match",
-                  }}
-                  render={({ field: { onChange, value } }) => (
-                    <TextInput
-                      placeholder="Confirm Password"
-                      secureTextEntry
-                      value={value}
-                      onChangeText={onChange}
-                      style={[styles.input]}
+                <View style={{ position: 'relative' }}>
+                  {/* Confirm Password */}
+                  <Controller
+                    name="confirmPassword"
+                    control={control}
+                    rules={{
+                      required: "Please confirm your password",
+                      validate: (value) =>
+                        value === watch("password") || "Passwords do not match",
+                    }}
+                    render={({ field: { onChange, value } }) => (
+                      <TextInput
+                        placeholder="Confirm Password"
+                        secureTextEntry={!showConfirmPassword}
+                        value={value}
+                        onChangeText={onChange}
+                        style={[styles.input]}
+                      />
+                    )}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                    style={{
+                      position: 'absolute',
+                      right: 10,
+                      top: '50%',
+                      transform: [{ translateY: -10 }],
+                    }}
+                  >
+                    <Ionicons
+                      name={showConfirmPassword ? "eye" : "eye-off"}
+                      size={20}
+                      color="gray"
                     />
-                  )}
-                />
+                  </TouchableOpacity>
+                </View>
                 {errors.confirmPassword && (
                   <Text style={styles.errorText}>
                     {errors.confirmPassword.message}
@@ -364,11 +402,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ccc",
     padding: 12,
+    paddingRight: 40,
     borderRadius: 8,
     fontSize: 14,
     fontFamily: "Regular",
     height: 45,
     overflow: "hidden",
+    color: "#000",
   },
 
   errorText: {

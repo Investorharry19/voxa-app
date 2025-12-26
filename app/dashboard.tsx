@@ -106,6 +106,8 @@ export default function dashboad() {
     await Clipboard.setStringAsync(
       "https://www.voxa.buzz/send-message/" + username
     );
+
+    console.log({username})
     Toast.show({
       type: "success",
       text1: "Link Copied",
