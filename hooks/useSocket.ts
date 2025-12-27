@@ -5,7 +5,7 @@ import { useEffect, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 
 export default function useAnonymousMessages({
-  serverUrl,
+  serverUrl, 
 }: {
   serverUrl: string;
 }) {
@@ -63,5 +63,5 @@ export default function useAnonymousMessages({
         console.log("Socket disconnected");
       }
     };
-  }, [serverUrl]);
+  }, [serverUrl , user]);
 }

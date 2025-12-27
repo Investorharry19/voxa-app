@@ -1,9 +1,9 @@
 import * as Notifications from "expo-notifications";
 import { useEffect, useRef } from "react";
 
-export default function useNotifications(onNotification, onResponse) {
-  const notificationListener = useRef();
-  const responseListener = useRef();
+export default function useNotifications(onNotification : any, onResponse : any) {
+  const notificationListener = useRef<any>(null);
+  const responseListener = useRef<any>(null);
 
   useEffect(() => {
     notificationListener.current =
